@@ -1,17 +1,44 @@
-import React from 'react';
-import ReactDOM from 'react-dom';
-import './index.css';
-import App from './App';
-import reportWebVitals from './reportWebVitals';
+import { render } from 'react-dom';
+import { Provider } from 'react-redux';
+import { createStore, applyMiddleware, Middleware } from 'redux';
+import { createLogger } from 'redux-logger';
+import { persistReducer, persistStore } from 'redux-persist';
+import { PersistGate } from 'redux-persist/integration/react';
+import storage from 'redux-persist/lib/storage';
+import thunk from 'redux-thunk';
 
-ReactDOM.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-  document.getElementById('root')
+import App1 from './App1'
+import App2 from './App2'
+import { rootReducer } from './reducers/index';
+import 'semantic-ui-css/semantic.min.css'
+
+const persistConfig = {
+  key: 'root',
+  storage,
+  whitelist: ['result'],
+};
+
+let middlewares: Middleware[] = [thunk];
+
+if (process.env.NODE_ENV === `development`) {
+  const logger = createLogger({
+    diff: true,
+    collapsed: true,
+  });
+
+  middlewares.push(logger);
+}
+const persistedReducer = persistReducer(persistConfig, rootReducer);
+const store = createStore(persistedReducer, applyMiddleware(...middlewares));
+const persistor = persistStore(store);
+
+const Index = () => (
+  <Provider store={store}>
+    <PersistGate loading={null} persistor={persistor}>
+      <App1 title="my form"></App1>
+      <App2 title="my form"></App2>
+    </PersistGate>
+  </Provider>
 );
 
-// If you want to start measuring performance in your app, pass a function
-// to log results (for example: reportWebVitals(console.log))
-// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
-reportWebVitals();
+render(<Index />, document.getElementById('root'));
